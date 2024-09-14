@@ -19,26 +19,29 @@
 
 // Wait for the deviceready event before using any of Cordova's device APIs.
 // See https://cordova.apache.org/docs/en/latest/cordova/events/events.html#deviceready
-document.addEventListener('deviceready', onDeviceReady, false);
+document.addEventListener("deviceready", onDeviceReady, false);
 
 function onDeviceReady() {
-    // Cordova is now initialized. Have fun!
+  // Cordova is now initialized. Have fun!
 
-    console.log('Running cordova-' + cordova.platformId + '@' + cordova.version);
-    document.getElementById('deviceready').classList.add('ready');
+  console.log("Running cordova-" + cordova.platformId + "@" + cordova.version);
+  document.getElementById("deviceready").classList.add("ready");
 }
 
-function loadTasks(){
-    const storage = window.localStorage;
-    if(storage.length == 0){
-        document.querySelector("#tasks").innerHTML = `<h1 class="p-2 text-center">Nenhuma tarefa</h1>`;
-    } else{
-        var structure = "";
-        for (let i = 0; i < storage.length; i++) {
-            const key = storage.key(i);
-            const task = JSON.parse(storage.getItem(key));
-            // tasks.push(JSON.parse(storage.getItem(key)));
-            structure = structure + `<div id="task-${key}" class="card mx-auto mb-3" style="width: 18rem">
+function loadTasks() {
+
+  const storage = window.localStorage;
+
+  if (storage.length == 0) {
+    document.querySelector(
+      "#tasks"
+    ).innerHTML = `<h1 class="p-2 text-center">Nenhuma tarefa</h1>`;
+  } else {
+    var structure = "";
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
+      const task = JSON.parse(storage.getItem(key));
+      structure = `<div id="task-${key}" class="card mx-auto mb-3" style="width: 18rem">
                   <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between">
                       <div class="d-flex align-items-center">
@@ -72,6 +75,7 @@ function loadTasks(){
                           id="checkboxNoLabel"
                           value=""
                           aria-label="..."
+                          ${task.done ? 'checked' : ''}
                         />
                       </div>
                     </li>
@@ -81,69 +85,93 @@ function loadTasks(){
                     <small id="task-date-${key}">Criado em ${task.date}</small>
                   </div>
                 </div>`;
-            }
-            document.querySelector("#tasks").innerHTML = structure;
+
+      if(task.done){
+        document.querySelector("#tasksDone").insertAdjacentHTML('beforeend', structure);
+      } else{
+        document.querySelector("#tasks").insertAdjacentHTML('beforeend', structure);
+      }
     }
+
+  }
 }
 loadTasks();
 
-function saveTask(){
+function saveTask() {
 
+  // Verificar se há algum valor no atributo target-task
+  var taskEditModal = document.querySelector(".modal").getAttribute("target-task");
+  
+  if(taskEditModal){
     const title = document.querySelector("#titleTask").value;
     const description = document.querySelector("#descTask").value;
-    const date = new Date().toLocaleString('pt-br');
+    
+    var oldTask = JSON.parse(window.localStorage.getItem(taskEditModal));
+    oldTask.title = title;
+    oldTask.description = description;
 
+    window.localStorage.setItem(taskEditModal, JSON.stringify(oldTask))
+
+  } else{
+    console.log("caindo no else");
+    const title = document.querySelector("#titleTask").value;
+    const description = document.querySelector("#descTask").value;
+    const date = new Date().toLocaleString("pt-br");
     const taskID = window.localStorage.length + 1;
 
-    const editModalClass = Array.from(document.querySelector(".modal").classList).find(cls => cls.startsWith('edit-modal-task-'));
+    const newTask = {
+      title: title,
+      description: description,
+      date: date,
+      done: false
+    };
+  
+    localStorage.setItem(taskID, JSON.stringify(newTask));
+  }
+  taskEditModal = "";
+  window.location.reload();
+}
+// Adicionando ouvinte ao botão de Save
+document.getElementById("saveButton").addEventListener("click", saveTask);
+
+function openEditModal(taskId) {
+  const title = document.querySelector(`#task-title-${taskId}`).textContent;
+  const description = document.querySelector(`#task-desc-${taskId}`).textContent;
+
+  document.querySelector("#titleTask").value = title;
+  document.querySelector("#descTask").value = description;
+  document.querySelector(".modal").setAttribute("target-task", `${taskId}`)
+}
+
+document.querySelectorAll(".edit-task").forEach((button) => {
+  button.addEventListener("click", function(){
+    const parentDiv = this.closest(".card");
+    // Obtém o ID da div pai
+    const parentId = parentDiv.id;
+    const taskId = parentId.split("-")[1];
+    openEditModal(taskId);
+  });
+});
+
+document.querySelector("#new-task").addEventListener("click", function () {
+  document.querySelector("#titleTask").placeholder = "Nova tarefa";
+  document.querySelector("#descTask").placeholder = "Descrição da tarefa...";
+  document.querySelector("#titleTask").value = "";
+  document.querySelector("#descTask").value = "";
+});
+
+document.querySelectorAll(".form-check-input").forEach((button) => {
+  button.addEventListener("click", function(){
+    const parentDiv = this.closest(".card");
+    // Obtém o ID da div pai
+    const parentId = parentDiv.id;
+    const taskId = parentId.split("-")[1];
     
-    if (editModalClass) {
-        // Extrai o ID da tarefa a ser editada
-        const existingTaskId = editModalClass.split('-')[2];
-        const existingTask = JSON.parse(localStorage.getItem(existingTaskId));
+    var oldTask = JSON.parse(window.localStorage.getItem(taskId));
+    oldTask.done = !oldTask.done;
 
-        // Atualiza a tarefa existente
-        existingTask.title = title;
-        existingTask.description = description;
-
-        localStorage.setItem(existingTaskId, JSON.stringify(existingTask));
-    } else {
-        // Cria uma nova tarefa
-        const newTask = {
-            title: title,
-            description: description,
-            date: date,
-        };
-
-        localStorage.setItem(taskID, JSON.stringify(newTask));
-    }
+    window.localStorage.setItem(taskId, JSON.stringify(oldTask));
 
     window.location.reload();
-}
-document.getElementById('saveButton').addEventListener('click', saveTask);
-
-function openEditModal(taskId){
-    const title = document.querySelector(`#task-title-${taskId}`).textContent;
-    const description = document.querySelector(`#task-desc-${taskId}`).textContent;
-
-    document.querySelector("#titleTask").value = title;
-    document.querySelector("#descTask").value = description;
-    document.querySelector(".modal").classList.add(`edit-modal-task-${taskId}`)
-}
-
-document.querySelectorAll(".edit-task").forEach(button => {
-    button.addEventListener('click', function(){
-        const parentDiv = this.closest('.card');
-        // Obtém o ID da div pai
-        const parentId = parentDiv.id;
-        const taskId = parentId.split('-')[1];
-        openEditModal(taskId);
-    })
-})
-
-document.querySelector("#new-task").addEventListener('click', function(){
-    document.querySelector("#titleTask").placeholder = "Nova tarefa";
-    document.querySelector("#descTask").placeholder = "Descrição da tarefa...";
-    document.querySelector("#titleTask").value = "";
-    document.querySelector("#descTask").value = "";
-})
+  });
+});
