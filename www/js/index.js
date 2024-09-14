@@ -113,7 +113,6 @@ function saveTask() {
     window.localStorage.setItem(taskEditModal, JSON.stringify(oldTask))
 
   } else{
-    console.log("caindo no else");
     const title = document.querySelector("#titleTask").value;
     const description = document.querySelector("#descTask").value;
     const date = new Date().toLocaleString("pt-br");
